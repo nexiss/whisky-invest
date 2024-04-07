@@ -36,3 +36,23 @@ export type Deal = {
   dealDate: number;
   priceAvg: number;
 };
+
+export type Whisky = Pick<
+  Pitch,
+  'distillery' | 'bondYear' | 'bondQuarter' | 'barrelTypeCode' | 'categoryName'
+>;
+
+export type Estimation = { year: number; days: number; avg: number };
+
+export type WhiskyDeal = {
+  data: Whisky;
+  deals: Deal[];
+  estimations: Estimation;
+};
+
+export type WhiskyDealsRecord = Record<string, WhiskyDeal>;
+
+export type ReducedWhiskyData = Pick<
+  WhiskyDeal['data'],
+  'distillery' | 'barrelTypeCode' | 'categoryName'
+>;

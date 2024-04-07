@@ -1,63 +1,93 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 import { createContext, useEffect, useState } from 'react';
+import { RouterProvider } from 'react-router-dom';
 
-import { PitchTable } from './components/pitchTable';
-import { useFetchDeals } from './hooks/useFetchDeals';
+import { AppNav } from './components/AppNav';
 import { useFetchPitches } from './hooks/useFetchPitches';
-import { Deal, Pitch } from './types';
+import { useFetchDeals } from './hooks/useFetchWhiskys';
+import { router } from './Router';
+import { INITIAL_STATE, WhiskyContextState } from './WhiskyContext';
 
-const WhiskyContext = createContext({
-  deals: {},
-});
+export const WhiskyContext = createContext<WhiskyContextState>(INITIAL_STATE);
 
 function App() {
   const fetchPitches = useFetchPitches();
-  const [loadingPitches, setLoadingPitches] = useState<boolean>(false);
   const fetchDeals = useFetchDeals();
-  const [loadingDeals, setLoadingDeals] = useState<boolean>(false);
 
-  const [pitches, setPitches] = useState<Pitch[]>([]);
-  const [deals, setDeals] = useState<Record<string, Deal[]>>({});
-
-  useEffect(() => {}, []);
+  const [state, setState] =
+    useState<Parameters<typeof WhiskyContext.Provider>[0]['value']>(
+      INITIAL_STATE
+    );
 
   useEffect(() => {
-    setLoadingPitches(true);
+    setState((prev) => ({
+      ...prev,
+      pitches: {
+        loading: true,
+        data: [],
+      },
+    }));
+
     fetchPitches()
       .then((pitches) => {
-        setPitches(pitches);
+        setState((prev) => ({
+          ...prev,
+          whiskyDeals: {
+            loading: true,
+            data: {},
+          },
+          pitches: {
+            loading: false,
+            data: pitches,
+          },
+        }));
 
-        setLoadingDeals(true);
         fetchDeals(pitches)
-          .then((result) => {
-            setDeals(result);
+          .then((deals) => {
+            setState((prev) => ({
+              ...prev,
+              whiskyDeals: {
+                loading: false,
+                data: deals,
+              },
+            }));
           })
           .catch(() => {
-            setDeals({});
+            setState((prev) => ({
+              ...prev,
+              whiskyDeals: {
+                loading: false,
+                data: {},
+              },
+            }));
             console.error(`Error processing endpoints`);
           })
           .finally(() => {
-            setLoadingDeals(false);
+            setState((prev) => ({
+              ...prev,
+              whiskyDeals: {
+                ...prev.whiskyDeals,
+                loading: false,
+              },
+            }));
           });
       })
       .finally(() => {
-        setLoadingPitches(false);
+        setState((prev) => ({
+          ...prev,
+          pitches: {
+            ...prev.pitches,
+            loading: false,
+          },
+        }));
       });
   }, [fetchDeals, fetchPitches]);
 
-  useEffect(() => {
-    console.log(deals);
-  }, [deals]);
-
   return (
-    <WhiskyContext.Provider value={{ deals }}>
-      {loadingDeals ? 'Fetching deals....' : 'Deals are fetched'}
-      {loadingPitches ? (
-        <div>Loading....</div>
-      ) : (
-        <PitchTable pitches={pitches}></PitchTable>
-      )}
+    <WhiskyContext.Provider value={state}>
+      <AppNav></AppNav>
+      <RouterProvider router={router}></RouterProvider>
     </WhiskyContext.Provider>
   );
 }
